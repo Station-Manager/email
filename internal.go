@@ -139,7 +139,11 @@ func sendWithClient(conn net.Conn, host string, auth smtp.Auth, from string, to 
 		return err
 	}
 
-	return client.Quit()
+	if err := client.Quit(); err != nil {
+		// message already accepted; treat QUIT failures as best-effort to avoid duplicate retries
+		return nil
+	}
+	return nil
 }
 
 func resolveHostname() string {
@@ -147,5 +151,18 @@ func resolveHostname() string {
 	if err != nil || host == "" {
 		return "localhost"
 	}
-	return host
+	// RFC 5321 recommends letters, digits, and hyphen; replace anything else with '-'
+	var b strings.Builder
+	for _, r := range host {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' {
+			b.WriteRune(r)
+			continue
+		}
+		b.WriteByte('-')
+	}
+	cleaned := strings.Trim(b.String(), "-")
+	if cleaned == "" {
+		return "localhost"
+	}
+	return cleaned
 }

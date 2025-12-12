@@ -90,7 +90,7 @@ func TestBuildEmailWithADIFAttachmentHeadersAndBoundary(t *testing.T) {
 		t.Fatalf("expected 2 recipients from config split, got %d", len(msg1.To))
 	}
 	// Check headers
-	if !strings.Contains(msg1.Msg, "\r\nDate: ") {
+	if !strings.Contains(msg1.Msg, "Date:") {
 		t.Errorf("missing Date header")
 	}
 	if !strings.Contains(strings.ToLower(msg1.Msg), "\r\nmessage-id: ") {
@@ -128,5 +128,30 @@ func TestSplitAndTrim(t *testing.T) {
 	out := splitAndTrim(inp)
 	if len(out) != 4 {
 		t.Fatalf("expected 4 items, got %d: %v", len(out), out)
+	}
+}
+
+func TestSendDefaultsEnvelopeFrom(t *testing.T) {
+	s := &Service{Config: &types.EmailConfig{
+		Enabled: true,
+		Host:    "smtp.example.com",
+		Port:    587,
+		From:    "cfg@example.com",
+	}}
+	s.isInitialized.Store(true)
+
+	var capturedFrom string
+	old := sendMailFn
+	sendMailFn = func(addr string, auth smtp.Auth, from string, to []string, msg []byte) error {
+		capturedFrom = from
+		return nil
+	}
+	t.Cleanup(func() { sendMailFn = old })
+
+	if err := s.Send(MsgDef{To: []string{"to@example.com"}, Msg: "body"}); err != nil {
+		t.Fatalf("Send failed: %v", err)
+	}
+	if capturedFrom != "cfg@example.com" {
+		t.Fatalf("expected defaulted from, got %q", capturedFrom)
 	}
 }

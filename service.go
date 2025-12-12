@@ -23,6 +23,8 @@ import (
 	"github.com/Station-Manager/types"
 )
 
+const ServiceName = types.EmailServiceName
+
 // sendMailFn is a package-level indirection to smtp.SendMail to enable testing without network.
 var sendMailFn = sendMailWithTLS
 
@@ -105,6 +107,13 @@ func (s *Service) Send(email MsgDef) error {
 	host := strings.TrimSpace(s.Config.Host)
 	username := strings.TrimSpace(s.Config.Username)
 	password := strings.TrimSpace(s.Config.Password)
+	from := strings.TrimSpace(email.From)
+	if from == "" {
+		from = strings.TrimSpace(s.Config.From)
+	}
+	if from == "" {
+		return errors.New(op).Msg("email from address cannot be empty")
+	}
 
 	addr := net.JoinHostPort(host, fmt.Sprintf("%d", s.Config.Port))
 
@@ -128,7 +137,7 @@ func (s *Service) Send(email MsgDef) error {
 		if attempt > 0 && delay > 0 {
 			time.Sleep(delay)
 		}
-		if err := sendMailFn(addr, auth, email.From, email.To, []byte(email.Msg)); err != nil {
+		if err := sendMailFn(addr, auth, from, email.To, []byte(email.Msg)); err != nil {
 			lastErr = err
 			s.LoggerService.ErrorWith().Err(err).Str("host", host).Str("addr", addr).Int("attempt", attempt+1).Msg("email send failed")
 			continue
