@@ -2,7 +2,6 @@ package email
 
 import (
 	"crypto/tls"
-	"fmt"
 	"net"
 	"net/smtp"
 	"os"
@@ -68,62 +67,70 @@ func sendMailWithTLS(addr string, auth smtp.Auth, from string, to []string, msg 
 }
 
 func tryImplicitTLS(host, addr string, auth smtp.Auth, from string, to []string, msg []byte) error {
+	const op errors.Op = "email.tryImplicitTLS"
 	// Use a dialer with timeout for robustness
 	conn, err := tls.DialWithDialer(dialerFactory(smtpDialTimeout), "tcp", addr, &tls.Config{ServerName: host})
 	if err != nil {
-		return err
+		return errors.New(op).Err(err)
 	}
 	return sendWithClient(conn, host, auth, from, to, msg, true)
 }
 
 func tryStartTLS(host, addr string, auth smtp.Auth, from string, to []string, msg []byte) error {
+	const op errors.Op = "email.tryStartTLS"
 	conn, err := dialerFactory(smtpDialTimeout).Dial("tcp", addr)
 	if err != nil {
-		return err
+		return errors.New(op).Err(err)
 	}
 	return sendWithClient(conn, host, auth, from, to, msg, false)
 }
 
 func sendWithClient(conn net.Conn, host string, auth smtp.Auth, from string, to []string, msg []byte, alreadyTLS bool) error {
+	const op errors.Op = "email.sendWithClient"
 	client, err := smtp.NewClient(conn, host)
 	if err != nil {
-		conn.Close()
-		return err
+		cerr := conn.Close()
+		if cerr != nil {
+			return errors.New(op).Err(cerr)
+		}
+		return errors.New(op).Err(err)
 	}
-	defer client.Close()
+	defer func(client *smtp.Client) {
+		_ = client.Close()
+	}(client)
 
 	hostname := resolveHostname()
 	// Issue EHLO/Hello to ensure extensions are populated prior to checking STARTTLS support
-	if err := client.Hello(hostname); err != nil {
-		return err
+	if err = client.Hello(hostname); err != nil {
+		return errors.New(op).Err(err)
 	}
 
 	if !alreadyTLS {
 		if ok, _ := client.Extension("STARTTLS"); !ok {
-			return fmt.Errorf("smtp server does not support STARTTLS; TLS required")
+			return errors.New(op).Msg("smtp server does not support STARTTLS; TLS required")
 		}
 		tlsCfg := &tls.Config{ServerName: host}
-		if err := client.StartTLS(tlsCfg); err != nil {
-			return err
+		if cerr := client.StartTLS(tlsCfg); cerr != nil {
+			return errors.New(op).Err(cerr)
 		}
 		// Re-issue EHLO/Hello after STARTTLS per RFC 3207
-		if err := client.Hello(hostname); err != nil {
-			return err
+		if herr := client.Hello(hostname); herr != nil {
+			return errors.New(op).Err(herr)
 		}
 	}
 
 	if auth != nil {
-		if err := client.Auth(auth); err != nil {
-			return err
+		if aerr := client.Auth(auth); aerr != nil {
+			return errors.New(op).Err(aerr)
 		}
 	}
 
-	if err := client.Mail(from); err != nil {
-		return err
+	if merr := client.Mail(from); merr != nil {
+		return merr
 	}
 	for _, addr := range to {
-		if err := client.Rcpt(addr); err != nil {
-			return err
+		if aerr := client.Rcpt(addr); aerr != nil {
+			return errors.New(op).Err(aerr)
 		}
 	}
 
@@ -131,15 +138,18 @@ func sendWithClient(conn net.Conn, host string, auth smtp.Auth, from string, to 
 	if err != nil {
 		return err
 	}
-	if _, err := wc.Write(msg); err != nil {
-		wc.Close()
-		return err
+	if _, err = wc.Write(msg); err != nil {
+		cerr := wc.Close()
+		if cerr != nil {
+			return errors.New(op).Err(cerr)
+		}
+		return errors.New(op).Err(err)
 	}
-	if err := wc.Close(); err != nil {
-		return err
+	if cerr := wc.Close(); cerr != nil {
+		return errors.New(op).Err(cerr)
 	}
 
-	if err := client.Quit(); err != nil {
+	if qerr := client.Quit(); qerr != nil {
 		// message already accepted; treat QUIT failures as best-effort to avoid duplicate retries
 		return nil
 	}

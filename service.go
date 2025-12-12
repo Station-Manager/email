@@ -230,11 +230,12 @@ func (s *Service) BuildEmailWithADIFAttachment(from, subject, msg string, to []s
 	if err != nil {
 		return MsgDef{}, errors.New(op).Err(err).Msg("create body part")
 	}
+
 	qp := quotedprintable.NewWriter(wp)
-	if _, err := qp.Write([]byte(msg)); err != nil {
+	if _, err = qp.Write([]byte(msg)); err != nil {
 		return MsgDef{}, errors.New(op).Err(err).Msg("write body")
 	}
-	if err := qp.Close(); err != nil {
+	if err = qp.Close(); err != nil {
 		return MsgDef{}, errors.New(op).Err(err).Msg("close qp")
 	}
 
