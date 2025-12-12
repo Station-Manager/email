@@ -4,13 +4,13 @@ go 1.25
 
 require (
 	github.com/Station-Manager/config v0.0.25
+	github.com/Station-Manager/errors v0.0.11
 	github.com/Station-Manager/logging v0.0.8
+	github.com/Station-Manager/types v0.0.54
 )
 
 require (
 	github.com/Station-Manager/enums v0.0.1 // indirect
-	github.com/Station-Manager/errors v0.0.11 // indirect
-	github.com/Station-Manager/types v0.0.54 // indirect
 	github.com/Station-Manager/utils v0.0.3 // indirect
 	github.com/creack/goselect v0.1.3 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.11 // indirect
