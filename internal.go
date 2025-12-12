@@ -113,10 +113,9 @@ func sendWithClient(conn net.Conn, host string, auth smtp.Auth, from string, to 
 		if cerr := client.StartTLS(tlsCfg); cerr != nil {
 			return errors.New(op).Err(cerr)
 		}
-		// Re-issue EHLO/Hello after STARTTLS per RFC 3207
-		if herr := client.Hello(hostname); herr != nil {
-			return errors.New(op).Err(herr)
-		}
+		// Note: net/smtp does not allow calling Hello twice in some states.
+		// Many servers accept AUTH immediately after STARTTLS without a second EHLO.
+		// Avoid re-issuing Hello here to prevent "smtp: Hello called after other methods" errors.
 	}
 
 	if auth != nil {
