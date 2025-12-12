@@ -3,6 +3,7 @@ module github.com/Station-Manager/email
 go 1.25
 
 require (
+	github.com/Station-Manager/adif v0.0.0-20251212131632-070884a6f26e
 	github.com/Station-Manager/config v0.0.28
 	github.com/Station-Manager/errors v0.0.11
 	github.com/Station-Manager/logging v0.0.8
@@ -10,6 +11,8 @@ require (
 )
 
 require (
+	github.com/Station-Manager/adapters v0.0.11 // indirect
+	github.com/Station-Manager/database v0.0.32 // indirect
 	github.com/Station-Manager/enums v0.0.1 // indirect
 	github.com/Station-Manager/utils v0.0.3 // indirect
 	github.com/creack/goselect v0.1.3 // indirect
