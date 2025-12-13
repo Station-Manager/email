@@ -1,9 +1,12 @@
 package email
 
 import (
+	"crypto/rand"
 	"crypto/tls"
+	"fmt"
 	"net"
 	"net/smtp"
+	"net/textproto"
 	"os"
 	"strconv"
 	"strings"
@@ -174,4 +177,44 @@ func resolveHostname() string {
 		return "localhost"
 	}
 	return cleaned
+}
+
+func splitAndTrim(s string) []string {
+	if s == "" {
+		return nil
+	}
+	// Split on comma, semicolon, or whitespace
+	repl := strings.NewReplacer(";", ",", " ", ",")
+	s = repl.Replace(s)
+	parts := strings.Split(s, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+func generateMessageID() string {
+	// random 12 bytes hex + hostname
+	b := make([]byte, 12)
+	_, _ = rand.Read(b)
+	host := "localhost"
+	if h, err := osHostname(); err == nil && h != "" {
+		host = h
+	}
+	return fmt.Sprintf("<%d.%x@%s>", time.Now().UnixNano(), b, host)
+}
+
+// osHostname is split for testability
+var osHostname = os.Hostname
+
+func mapToMIMEHeader(m map[string]string) textproto.MIMEHeader {
+	h := make(textproto.MIMEHeader)
+	for k, v := range m {
+		h.Set(k, v)
+	}
+	return h
 }

@@ -7,16 +7,16 @@ require (
 	github.com/Station-Manager/config v0.0.28
 	github.com/Station-Manager/errors v0.0.11
 	github.com/Station-Manager/logging v0.0.8
-	github.com/Station-Manager/types v0.0.56
+	github.com/Station-Manager/types v0.0.59
 )
 
 require (
 	github.com/Station-Manager/adapters v0.0.11 // indirect
 	github.com/Station-Manager/database v0.0.32 // indirect
-	github.com/Station-Manager/enums v0.0.1 // indirect
+	github.com/Station-Manager/enums v0.0.2 // indirect
 	github.com/Station-Manager/utils v0.0.3 // indirect
 	github.com/creack/goselect v0.1.3 // indirect
-	github.com/gabriel-vasile/mimetype v1.4.11 // indirect
+	github.com/gabriel-vasile/mimetype v1.4.12 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.29.0 // indirect

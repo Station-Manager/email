@@ -2,7 +2,6 @@ package email
 
 import (
 	"bytes"
-	"crypto/rand"
 	"encoding/base64"
 	"fmt"
 	"mime/multipart"
@@ -10,7 +9,6 @@ import (
 	"net"
 	"net/smtp"
 	"net/textproto"
-	"os"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -94,6 +92,7 @@ func (s *Service) Initialize() error {
 	return initErr
 }
 
+// Send sends an email message using SMTP configuration, with support for retries and error handling.
 func (s *Service) Send(email MsgDef) error {
 	const op errors.Op = "email.Service.Send"
 	if !s.isInitialized.Load() {
@@ -153,11 +152,6 @@ func (s *Service) Send(email MsgDef) error {
 	return nil
 }
 
-// Deprecated: use BuildEmailWithADIFAttachment (correct spelling)
-func (s *Service) BuildEmailWithADIFAttachement(from, subject, msg string, to []string, slice []types.Qso) (MsgDef, error) { //nolint:revive
-	return s.BuildEmailWithADIFAttachment(from, subject, msg, to, slice)
-}
-
 func (s *Service) BuildEmailWithADIFAttachment(from, subject, msg string, to []string, slice []types.Qso) (MsgDef, error) {
 	const op errors.Op = "email.Service.BuildEmailWithADIFAttachment"
 
@@ -165,7 +159,7 @@ func (s *Service) BuildEmailWithADIFAttachment(from, subject, msg string, to []s
 	if from == "" {
 		from = s.Config.From
 	}
-	// Resolve recipients: use provided list or fallback to config (split by comma/semicolon/space)
+	// Resolve recipients: use a provided list or fallback to config (split by comma/semicolon/space)
 	tos := to
 	if len(tos) == 0 {
 		tos = splitAndTrim(s.Config.To)
@@ -205,7 +199,7 @@ func (s *Service) BuildEmailWithADIFAttachment(from, subject, msg string, to []s
 	hdr.Set("MIME-Version", "1.0")
 
 	var buf bytes.Buffer
-	// Create multipart/mixed writer
+	// Create a multipart / mixed writer
 	mw := multipart.NewWriter(&buf)
 	boundary := mw.Boundary()
 	hdr.Set("Content-Type", fmt.Sprintf("multipart/mixed; boundary=%q", boundary))
@@ -248,6 +242,7 @@ func (s *Service) BuildEmailWithADIFAttachment(from, subject, msg string, to []s
 	if err != nil {
 		return MsgDef{}, errors.New(op).Err(err).Msg("create attachment part")
 	}
+
 	// 76-chunked base64 with CRLF
 	for i := 0; i < len(adifB64); i += 76 {
 		end := i + 76
@@ -266,44 +261,4 @@ func (s *Service) BuildEmailWithADIFAttachment(from, subject, msg string, to []s
 	}
 
 	return MsgDef{From: from, To: tos, Msg: buf.String()}, nil
-}
-
-func splitAndTrim(s string) []string {
-	if s == "" {
-		return nil
-	}
-	// Split on comma, semicolon, or whitespace
-	repl := strings.NewReplacer(";", ",", " ", ",")
-	s = repl.Replace(s)
-	parts := strings.Split(s, ",")
-	out := make([]string, 0, len(parts))
-	for _, p := range parts {
-		p = strings.TrimSpace(p)
-		if p != "" {
-			out = append(out, p)
-		}
-	}
-	return out
-}
-
-func generateMessageID() string {
-	// random 12 bytes hex + hostname
-	b := make([]byte, 12)
-	_, _ = rand.Read(b)
-	host := "localhost"
-	if h, err := osHostname(); err == nil && h != "" {
-		host = h
-	}
-	return fmt.Sprintf("<%d.%x@%s>", time.Now().UnixNano(), b, host)
-}
-
-// osHostname is split for testability
-var osHostname = os.Hostname
-
-func mapToMIMEHeader(m map[string]string) textproto.MIMEHeader {
-	h := make(textproto.MIMEHeader)
-	for k, v := range m {
-		h.Set(k, v)
-	}
-	return h
 }
