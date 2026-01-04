@@ -3,11 +3,11 @@ module github.com/Station-Manager/email
 go 1.25
 
 require (
-	github.com/Station-Manager/adif v0.0.4
-	github.com/Station-Manager/config v0.0.32
+	github.com/Station-Manager/adif v0.0.6
+	github.com/Station-Manager/config v0.0.34
 	github.com/Station-Manager/errors v0.0.11
-	github.com/Station-Manager/logging v0.0.11
-	github.com/Station-Manager/types v0.0.68
+	github.com/Station-Manager/logging v0.0.12
+	github.com/Station-Manager/types v0.0.71
 )
 
 require (
@@ -30,6 +30,4 @@ require (
 	golang.org/x/sys v0.39.0 // indirect
 	golang.org/x/text v0.32.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
-	modernc.org/libc v1.67.2 // indirect
-	modernc.org/sqlite v1.42.2 // indirect
 )
